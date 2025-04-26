@@ -1,64 +1,75 @@
-Real-Time Financial Transactions Streaming Pipeline Using Azure
-Project Overview
-This project demonstrates a real-time streaming pipeline for financial transactions using Azure services.
+# Real-Time Financial Transactions Streaming Pipeline Using Azure
+
+## Project Overview
+
+This project demonstrates a real-time **streaming pipeline for financial transactions** using Azure services.  
 It simulates a continuous stream of transaction data and processes it in real-time to identify potentially fraudulent activity.
 
-Key components include:
+Key components:
+- **Azure Data Factory** to simulate real-time ingestion
+- **Azure Databricks** with **PySpark Structured Streaming** to process data
+- **Azure Blob Storage** and **Delta Lake** for scalable, reliable storage
 
-Azure Data Factory (simulate streaming ingestion)
+Fraud detection logic flags transactions over **$10,000** as suspicious.
 
-Azure Databricks with PySpark Structured Streaming (process data)
+The pipeline showcases real-time analytics, processing new transactions within seconds.
 
-Delta Lake on Azure Blob Storage (store outputs)
+---
 
-Fraud detection: transactions over $10,000 are flagged as suspicious.
+## Architecture Diagram
 
-The pipeline works end-to-end and processes new transactions within seconds.
+![Architecture Diagram](pipeline%20image.png)
 
-Architecture Diagram
-🔹 Data flow:
-Azure Data Factory ➡ Azure Blob Storage (raw) ➡ Azure Databricks Streaming ➡ Azure Blob Storage (processed)
+*Azure Data Factory ➔ Blob Storage ➔ Databricks (Auto Loader + Structured Streaming) ➔ Delta Lake.*
 
-(Architecture Diagram placeholder: insert your image)
+---
 
-Technologies Used
-Azure Data Factory (ADF)
+## Technologies Used
 
-Azure Databricks (PySpark)
+- Azure Data Factory (ADF)
+- Azure Databricks (PySpark)
+- Azure Blob Storage
+- Delta Lake
+- Structured Streaming
 
-Azure Blob Storage
+---
 
-Delta Lake
+## How to Run
 
-Structured Streaming
+1. **Set up Azure Storage**: Create containers `raw-transactions` and `processed-transactions`.
+2. **Configure Databricks Cluster**: Mount Blob containers using dbutils or ABFS path.
+3. **Create ADF Pipeline**: Simulate new transactions every 5 minutes using Copy Activity + Tumbling Trigger.
+4. **Run the Databricks Streaming Notebook**: 
+   - Ingest data using Auto Loader
+   - Apply fraud detection
+   - Write results to Delta Lake
+5. **Monitor Outputs**: 
+   - Check ADF pipeline runs
+   - Check processed Delta files
+   - Query transaction and fraud metrics in Databricks
 
-How to Run
-Set up Azure Blob Storage
-Create two containers: raw-transactions, processed-transactions
+---
 
-Configure Databricks Cluster
-Mount both Blob containers.
+## Results
 
-Create ADF Pipeline
-Copy simulated transactions into raw-transactions with a trigger.
+| Time (Minute)        | Total Transactions | Suspicious Transactions |
+|----------------------|--------------------|-------------------------|
+| 2025-04-26 13:00:00  | 120                | 3                       |
+| 2025-04-26 13:05:00  | 134                | 2                       |
 
-Run Databricks Streaming Job
-Read new files, apply fraud detection logic, write to Delta.
+Processed data is available for real-time querying and fraud analysis.
 
-Monitor
-Observe results in processed folder + query Delta Lake tables.
+---
 
-Sample Results
+## Future Improvements 🚀
 
-Time	Total Transactions	Suspicious Transactions
-2025-04-26 13:00	120	3
-2025-04-26 13:01	134	2
-Future Improvements 🚀
-Implement ML models for fraud prediction (instead of thresholding)
+- **Advanced Fraud Detection**: Integrate ML models instead of static thresholds.
+- **Real-Time Dashboards**: Build live reports in Power BI or Synapse Serverless.
+- **Complex Streaming Patterns**: Handle late-arriving events, watermarking, sliding windows.
 
-Live real-time dashboard (Power BI, Synapse Serverless Pool)
+---
 
-Handle late-arriving transactions (advanced windowing in Spark)
+## Contact
 
-Contact
-📩 Feel free to connect with me on LinkedIn:https://www.linkedin.com/in/adarshvijay08/
+Feel free to connect with me on [LinkedIn](#)!
+
