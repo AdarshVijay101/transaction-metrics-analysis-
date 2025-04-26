@@ -1,4 +1,5 @@
 # Real-Time Financial Transactions Streaming Pipeline Using Azure
+
 ![Built with Azure Databricks](https://img.shields.io/badge/Built%20with-Azure%20Databricks-orange)
 
 ## Project Overview
