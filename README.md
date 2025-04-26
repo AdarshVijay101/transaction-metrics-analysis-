@@ -1,36 +1,64 @@
 Real-Time Financial Transactions Streaming Pipeline Using Azure
 Project Overview
-This project demonstrates a real-time streaming pipeline for financial transactions using Azure services. It simulates a continuous stream of transaction data and processes it in real-time to identify potentially fraudulent activity. Key components include Azure Data Factory (to simulate streaming data ingestion), Azure Databricks with PySpark Structured Streaming (to process the data in near real-time), and Delta Lake on Azure Blob Storage (to store outputs reliably). A basic fraud detection logic is implemented by flagging high-value transactions over $10,000 as suspicious. The pipeline works end-to-end to showcase real-time analytics. Azure Data Factory periodically injects new transaction data, which is immediately picked up by a running Databricks streaming job. The Spark job cleans and transforms the data, applies the fraud detection rule, and writes the results to a Delta Lake table. This architecture ensures that as new transactions arrive, they are processed within seconds and marked if suspicious. The result is a scalable, cloud-based solution demonstrating how financial institutions can stream and analyze transactions with minimal latency.
-Architecture Diagram
-The high-level architecture is illustrated below. It shows how data flows from ingestion to processing to storage, along with the services involved: 
- Diagram: Azure Data Factory (scheduling data drops) feeds data into Azure Blob Storage (raw transactions). Azure Databricks (Spark Structured Streaming) reads the raw data, processes it (flagging $10K+ transactions), and writes results to Delta Lake on Blob Storage (processed data).
-Technologies Used
-Azure Data Factory (ADF) – Used to orchestrate and simulate the streaming data source. ADF pipelines periodically copy or generate new transaction files, acting as a stream generator for incoming data.
-Azure Databricks – Provides a Spark environment (cluster) to run PySpark Structured Streaming jobs that ingest and process the transactions in real-time.
-Azure Blob Storage – Serves as the storage layer for both raw input data and processed output. Two Blob containers (e.g., raw-transactions and processed-transactions) are used to organize incoming files and results.
-Delta Lake – Employed on top of Blob storage for storing the processed data in Delta format. Delta Lake ensures reliable, ACID-compliant storage with versioning, allowing safe incremental updates and queries on the output data.
-PySpark & Structured Streaming – The Python API for Apache Spark is used to write the streaming logic. Structured Streaming allows the pipeline to handle data in micro-batches, maintaining continuous processing as new files arrive, and enabling windowed aggregations for metrics.
-How to Run
-Follow these steps to set up and run the pipeline:
-Set up Azure Storage: Create an Azure Blob Storage account (or use an existing one) and create two containers: for example, one named raw-transactions (to receive incoming transaction files) and another named processed-transactions (to store processed results). These will serve as the source and sink for the streaming data. Make sure to upload or have a sample transactions dataset (e.g., a CSV file of transactions) that ADF can use as source data.
-Configure Databricks environment: In your Azure Databricks workspace, attach a cluster that will run the streaming job. Connect Databricks to the Blob containers – this can be done by mounting the containers to DBFS or by directly using ABFS paths with secure credentials. For example, use dbutils.fs.mount() with the storage account name and key to mount raw-transactions at a mount point (like /mnt/raw-transactions) and processed-transactions at /mnt/processed-transactions. This setup allows your Spark job to easily read from and write to Blob storage.
-Create an Azure Data Factory pipeline: Using Azure Data Factory, build a pipeline that simulates streaming input by periodically copying data into the raw-transactions container. For instance, you can use a Copy Activity that reads from a static source file (the sample transactions dataset) and writes to the Blob container. Use dynamic content to generate a unique filename for each run (for example, appending a timestamp to the file name, like transactions_20250426130000.csv). Set up a trigger to run this pipeline on a schedule – e.g., every 5 minutes – so that new transaction files appear continuously in the raw container. Remember to publish your ADF pipeline and start the trigger.
-Run the Databricks streaming job: In Azure Databricks, develop a PySpark Structured Streaming job (e.g., in a notebook) that reads the incoming files as a stream. Point the reader to the mounted /mnt/raw-transactions path and define the schema of the transaction data (columns like transaction ID, amount, timestamp, etc.). As data streams in, apply any necessary transformations or cleaning. Implement the fraud detection logic by flagging transactions over $10,000 – for example, add a new boolean column is_suspicious that is true if the transaction amount > 10000. Then write the stream out to the /mnt/processed-transactions path in Delta format. You can use writeStream.format("delta").outputMode("append")... to continuously append processed records to a Delta table. Start the streaming query and let it run continuously (e.g., keep the notebook active or run it as a Databricks job).
-Monitor and verify the results: Once the pipeline is running, you can monitor the Databricks streaming job and check the outputs in real time. In Azure Databricks, view the Streaming tab or the notebook output to see progress updates (e.g., number of records processed in each micro-batch, processing latency, etc.). In Azure Blob Storage, you should see new files accumulating in the processed-transactions container (Delta Lake will create transaction log files and Parquet data files). You can query the Delta table (for example, using a Databricks notebook or Spark SQL) to ensure transactions are being ingested and marked correctly. Also, verify the ADF pipeline runs in Azure Data Factory Monitor to confirm that it’s triggering on schedule. The pipeline produces real-time metrics as well – for instance, you might compute the count of transactions per minute and how many of them are suspicious. These metrics can be observed by querying the processed data or by having the streaming job output aggregate results to a separate table or console for monitoring.
-Results
-This streaming pipeline successfully processes incoming transactions in near real-time and flags those above $10K. The output is stored in a Delta Lake table on Blob storage, which can be queried for analysis. All ingested transactions are appended to the Delta table with an additional column (e.g., is_suspicious) indicating if they exceeded the $10,000 threshold. Because Delta Lake is used, the data is stored reliably and is immediately queryable even as new batches arrive, enabling incremental analytics. In addition to the raw processed records, the pipeline also generates real-time metrics about the data. For example, the streaming job computes the total number of transactions per time window (per minute) and how many of those were flagged as suspicious. These metrics themselves are stored in Delta format (or can be printed to logs), allowing further analysis or visualization. Below is a sample of what such an aggregated metrics table might look like:
+This project demonstrates a real-time streaming pipeline for financial transactions using Azure services.
+It simulates a continuous stream of transaction data and processes it in real-time to identify potentially fraudulent activity.
 
-Time (Minute)	Total Transactions	Suspicious Transactions
-2025-04-26 13:00:00	120	3
-2025-04-26 13:01:00	134	2
-2025-04-26 13:02:00	129	1
-...	...	...
-Sample metrics (per-minute aggregates): In this example, each row represents a one-minute window, with counts of how many transactions occurred and how many were flagged as suspicious in that interval. These results show the system capturing and flagging high-value transactions in real time. (Note: The actual numbers will depend on the input data simulated by ADF.) The successful execution of this project confirms that the architecture can handle streaming data with low latency. New files dropped by ADF are immediately picked up by Spark, processed, and reflected in the output store within a minute-scale timeframe. The data in the Delta table can be used for further analysis, such as running queries to list all suspicious transactions or computing summary statistics on the fly. This real-time processing capability is crucial for scenarios like fraud detection, where timely insights can trigger swift actions.
-Future Improvements
-While this project is a solid foundation, there are several ways it could be extended or improved:
-Advanced Fraud Detection: Integrate machine learning models to enhance the fraud detection logic. Instead of a simple threshold, a trained model (e.g., using Azure Machine Learning or Spark MLlib) could evaluate transactions based on multiple features to predict fraud in real time. This could reduce false positives and catch more subtle fraudulent patterns.
-Real-Time Dashboard & Alerts: Build a live dashboard to visualize the streaming data and metrics. For example, use Azure Synapse Analytics or Power BI streaming tiles to display transaction counts and alert on suspicious transactions as they occur. Real-time charts and geolocation maps (if location data is available) could give instant insight to analysts or demonstrate the pipeline’s activity to stakeholders. Additionally, one could set up alerting systems (using Azure Functions or Logic Apps) to notify teams when a suspicious transaction is detected.
-Complex Streaming Patterns: Implement more sophisticated streaming features provided by Spark. For instance, use event-time watermarking to handle late-arriving data (ensuring that even if some transaction events are delayed, they can still be processed within a tolerance window). Also, experiment with different window durations or sliding windows for computing aggregates, and ensure the pipeline can handle out-of-order events gracefully. Another improvement could be to ingest data from an actual streaming source such as Azure Event Hubs or Kafka, removing the need for ADF and making the pipeline truly event-driven end-to-end.
-By incorporating these improvements, the project could evolve into an even more robust real-world solution. It could handle larger volumes, provide smarter fraud detection, and deliver insights instantly via user-friendly interfaces.
+Key components include:
+
+Azure Data Factory (simulate streaming ingestion)
+
+Azure Databricks with PySpark Structured Streaming (process data)
+
+Delta Lake on Azure Blob Storage (store outputs)
+
+Fraud detection: transactions over $10,000 are flagged as suspicious.
+
+The pipeline works end-to-end and processes new transactions within seconds.
+
+Architecture Diagram
+🔹 Data flow:
+Azure Data Factory ➡ Azure Blob Storage (raw) ➡ Azure Databricks Streaming ➡ Azure Blob Storage (processed)
+
+(Architecture Diagram placeholder: insert your image)
+
+Technologies Used
+Azure Data Factory (ADF)
+
+Azure Databricks (PySpark)
+
+Azure Blob Storage
+
+Delta Lake
+
+Structured Streaming
+
+How to Run
+Set up Azure Blob Storage
+Create two containers: raw-transactions, processed-transactions
+
+Configure Databricks Cluster
+Mount both Blob containers.
+
+Create ADF Pipeline
+Copy simulated transactions into raw-transactions with a trigger.
+
+Run Databricks Streaming Job
+Read new files, apply fraud detection logic, write to Delta.
+
+Monitor
+Observe results in processed folder + query Delta Lake tables.
+
+Sample Results
+
+Time	Total Transactions	Suspicious Transactions
+2025-04-26 13:00	120	3
+2025-04-26 13:01	134	2
+Future Improvements 🚀
+Implement ML models for fraud prediction (instead of thresholding)
+
+Live real-time dashboard (Power BI, Synapse Serverless Pool)
+
+Handle late-arriving transactions (advanced windowing in Spark)
+
 Contact
-Feel free to connect with me on LinkedIn:https://www.linkedin.com/in/adarshvijay08/
+📩 Feel free to connect with me on LinkedIn:https://www.linkedin.com/in/adarshvijay08/
