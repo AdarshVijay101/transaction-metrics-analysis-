@@ -71,5 +71,5 @@ Processed data is available for real-time querying and fraud analysis.
 
 ## Contact
 
-Feel free to connect with me on [LinkedIn](#)!
+Feel free to connect with me on [LinkedIn](#https://www.linkedin.com/in/adarshvijay08/)!
 
